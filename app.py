@@ -1,6 +1,7 @@
 import streamlit as st
 
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
+# load_dotenv()
 
 from youtube_transcript_api import (
     TranscriptsDisabled,
@@ -22,7 +23,6 @@ st.set_page_config(
     layout="wide"
 )
 
-load_dotenv()
 
 
 # ============================================================

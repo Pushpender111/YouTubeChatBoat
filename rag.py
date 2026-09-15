@@ -2,8 +2,12 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from youtube_transcript_api import (
     YouTubeTranscriptApi,
     TranscriptsDisabled,
-    NoTranscriptFound
+    NoTranscriptFound,
+    VideoUnavailable,
+    RequestBlocked,
+    IpBlocked
 )
+from youtube_transcript_api.proxies import WebshareProxyConfig
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.vectorstores import FAISS
@@ -68,22 +72,63 @@ def extract_video_id(url):
 
 def get_transcript(video_id):
 
-    api = YouTubeTranscriptApi()
+    proxy_username = os.getenv("WEBSHARE_PROXY_USERNAME")
+    proxy_password = os.getenv("WEBSHARE_PROXY_PASSWORD")
 
-    transcript_data = api.fetch(
-        video_id
-    )
+    # Use Webshare residential proxy when credentials are available
+    if proxy_username and proxy_password:
 
-    transcript_list = (
-        transcript_data.to_raw_data()
-    )
+        proxy_config = WebshareProxyConfig(
+            proxy_username=proxy_username,
+            proxy_password=proxy_password
+        )
 
-    transcript = " ".join(
-        chunk["text"]
-        for chunk in transcript_list
-    )
+        api = YouTubeTranscriptApi(
+            proxy_config=proxy_config
+        )
 
-    return transcript
+    else:
+        # Local/direct connection
+        api = YouTubeTranscriptApi()
+
+    try:
+
+        transcript_data = api.fetch(video_id)
+
+        transcript_list = transcript_data.to_raw_data()
+
+        transcript = " ".join(
+            chunk["text"]
+            for chunk in transcript_list
+        )
+
+        return transcript
+
+    except TranscriptsDisabled:
+        raise ValueError(
+            "This video has transcripts disabled."
+        )
+
+    except NoTranscriptFound:
+        raise ValueError(
+            "No transcript is available for this video."
+        )
+
+    except VideoUnavailable:
+        raise ValueError(
+            "This YouTube video is unavailable."
+        )
+
+    except (RequestBlocked, IpBlocked):
+        raise ValueError(
+            "YouTube blocked the transcript request. "
+            "Please try again or use another video."
+        )
+
+    except Exception as e:
+        raise ValueError(
+            f"Could not retrieve transcript: {str(e)}"
+        )
 
 
 # ============================================================

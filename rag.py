@@ -75,21 +75,19 @@ def get_transcript(video_id):
     proxy_username = os.getenv("WEBSHARE_PROXY_USERNAME")
     proxy_password = os.getenv("WEBSHARE_PROXY_PASSWORD")
 
-    # Use Webshare residential proxy when credentials are available
-    if proxy_username and proxy_password:
-
-        proxy_config = WebshareProxyConfig(
-            proxy_username=proxy_username,
-            proxy_password=proxy_password
+    if not proxy_username or not proxy_password:
+        raise ValueError(
+            "Webshare proxy credentials are not configured."
         )
 
-        api = YouTubeTranscriptApi(
-            proxy_config=proxy_config
-        )
+    proxy_config = WebshareProxyConfig(
+        proxy_username=proxy_username,
+        proxy_password=proxy_password
+    )
 
-    else:
-        # Local/direct connection
-        api = YouTubeTranscriptApi()
+    api = YouTubeTranscriptApi(
+        proxy_config=proxy_config
+    )
 
     try:
 
@@ -121,8 +119,8 @@ def get_transcript(video_id):
 
     except (RequestBlocked, IpBlocked):
         raise ValueError(
-            "YouTube blocked the transcript request. "
-            "Please try again or use another video."
+            "YouTube blocked the request. "
+            "Please try again later or use another video."
         )
 
     except Exception as e:

@@ -5,6 +5,7 @@ import streamlit as st
 
 from youtube_transcript_api import (
     TranscriptsDisabled,
+    NoTranscriptFound,
     NoTranscriptFound
 )
 
